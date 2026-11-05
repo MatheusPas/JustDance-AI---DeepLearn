@@ -14,18 +14,18 @@ using UnityEngine.UI;
 /// </summary>
 public static class MainMenuSceneBuilder
 {
-    const string ArtDir = "Assets/Art/Placeholders";
+    internal const string ArtDir = "Assets/Art/Placeholders";
     const string PrefabDir = "Assets/Prefabs";
-    const string ScenePath = "Assets/Scenes/MainMenu.unity";
+    internal const string ScenePath = "Assets/Scenes/MainMenu.unity";
 
-    static readonly Color Pink = new Color(1f, 0.24f, 0.68f);
-    static readonly Color Cyan = new Color(0.12f, 0.62f, 0.78f);
-    static readonly Color Violet = new Color(0.45f, 0.30f, 0.90f);
-    static readonly Color Slate = new Color(0.22f, 0.15f, 0.36f);
-    static readonly Color PanelDark = new Color(0.06f, 0.02f, 0.14f, 0.78f);
+    internal static readonly Color Pink = new Color(1f, 0.24f, 0.68f);
+    internal static readonly Color Cyan = new Color(0.12f, 0.62f, 0.78f);
+    internal static readonly Color Violet = new Color(0.45f, 0.30f, 0.90f);
+    internal static readonly Color Slate = new Color(0.22f, 0.15f, 0.36f);
+    internal static readonly Color PanelDark = new Color(0.06f, 0.02f, 0.14f, 0.78f);
 
-    static Font font;
-    static Font UIFont
+    internal static Font font;
+    internal static Font UIFont
     {
         get
         {
@@ -107,6 +107,9 @@ public static class MainMenuSceneBuilder
         var artLabel = AddText(art, "Label", "[ arte 2D do dançarino ]", 36, new Color(1f, 1f, 1f, 0.55f), TextAnchor.MiddleCenter, FontStyle.Italic);
         Stretch(artLabel.rectTransform);
 
+        var pyStatus = AddText(main, "PythonStatus", "", 28, new Color(0.6f, 1f, 0.7f, 0.8f), TextAnchor.LowerLeft, FontStyle.Normal);
+        Anchor(pyStatus.rectTransform, new Vector2(0, 0), new Vector2(0, 0), new Vector2(140, 40), new Vector2(1500, 44));
+
         // ---------- Painel da galeria ----------
         var gallery = NewRect("GalleryPanel", canvasRt);
         Stretch(gallery);
@@ -145,7 +148,7 @@ public static class MainMenuSceneBuilder
         scrollRect.vertical = true;
         scrollRect.scrollSensitivity = 40;
 
-        var empty = AddText(gallery, "EmptyLabel", "Nenhuma música treinada ainda.\nUse o train.py para criar uma.", 44, new Color(1f, 1f, 1f, 0.7f), TextAnchor.MiddleCenter, FontStyle.Italic);
+        var empty = AddText(gallery, "EmptyLabel", "Nenhuma música treinada ainda.\nUse CRIAR DANÇA para criar a primeira.", 44, new Color(1f, 1f, 1f, 0.7f), TextAnchor.MiddleCenter, FontStyle.Italic);
         Stretch(empty.rectTransform);
         var hint = AddText(gallery, "HintLabel", "", 28, new Color(1f, 0.85f, 0.4f), TextAnchor.LowerCenter, FontStyle.Normal);
         Anchor(hint.rectTransform, new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0, 40), new Vector2(1600, 50));
@@ -162,6 +165,15 @@ public static class MainMenuSceneBuilder
         Anchor(infoBody.rectTransform, new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -170), new Vector2(1000, 330));
         var infoBack = MakeSmallButton(box, "BackButton", "VOLTAR", round, Pink);
         Anchor((RectTransform)infoBack.transform, new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0, 50), new Vector2(300, 80));
+
+        // ---------- Criar dança e quantos jogadores ----------
+        CreateDancePanel createComp;
+        var createRt = BuildCreatePanel(canvasRt, round, out createComp);
+        Text playersTitle, playersSubtitle;
+        RectTransform playersContainer;
+        Button playersTemplate, playersBack;
+        var playersRt = BuildPlayersPanel(canvasRt, round, out playersTitle, out playersSubtitle,
+            out playersContainer, out playersTemplate, out playersBack);
 
         // ---------- Controller ----------
         var ctrlGo = new GameObject("MainMenuController", typeof(MainMenuController));
@@ -181,10 +193,21 @@ public static class MainMenuSceneBuilder
         Set(so, "hintLabel", hint);
         Set(so, "infoTitle", infoTitle);
         Set(so, "infoBody", infoBody);
+        Set(so, "createPanel", createRt.gameObject);
+        Set(so, "playersPanel", playersRt.gameObject);
+        Set(so, "createDance", createComp);
+        Set(so, "pythonStatusLabel", pyStatus);
+        Set(so, "playersTitle", playersTitle);
+        Set(so, "playersSubtitle", playersSubtitle);
+        Set(so, "playersContainer", playersContainer);
+        Set(so, "playersButtonTemplate", playersTemplate);
+        Set(so, "playersBackButton", playersBack);
         so.ApplyModifiedPropertiesWithoutUndo();
 
         gallery.gameObject.SetActive(false);
         info.gameObject.SetActive(false);
+        createRt.gameObject.SetActive(false);
+        playersRt.gameObject.SetActive(false);
 
         EditorSceneManager.SaveScene(scene, ScenePath);
         AddToBuildSettings(ScenePath);
@@ -192,9 +215,177 @@ public static class MainMenuSceneBuilder
         Debug.Log("[JustDance] Cena do menu criada em " + ScenePath + ". Aperte Play!");
     }
 
+    // ------------------------------------------------------------ criar dança
+
+    /// <summary>Canto superior esquerdo do elemento a (left, top) do canto superior esquerdo do pai.</summary>
+    internal static void Place(RectTransform rt, float left, float top, float w, float h)
+    {
+        Anchor(rt, new Vector2(0, 1), new Vector2(0, 1), new Vector2(left, -top), new Vector2(w, h));
+    }
+
+    static Text FieldLabel(RectTransform parent, string name, string text, float top)
+    {
+        var t = AddText(parent, name, text, 34, Color.white, TextAnchor.MiddleLeft, FontStyle.Bold);
+        Place(t.rectTransform, 60, top, 380, 70);
+        return t;
+    }
+
+    static Text ValueBox(RectTransform parent, string name, string text, Sprite round, float left, float top, float width)
+    {
+        var box = NewRect(name, parent);
+        Place(box, left, top, width, 70);
+        AddImage(box, round, new Color(1f, 1f, 1f, 0.10f), true).raycastTarget = false;
+        var label = AddText(box, "Label", text, 30, new Color(0.9f, 0.88f, 1f), TextAnchor.MiddleLeft, FontStyle.Italic);
+        Stretch(label.rectTransform);
+        label.rectTransform.offsetMin = new Vector2(20, 0);
+        label.rectTransform.offsetMax = new Vector2(-12, 0);
+        label.resizeTextForBestFit = true;
+        label.resizeTextMinSize = 16;
+        label.resizeTextMaxSize = 30;
+        label.verticalOverflow = VerticalWrapMode.Truncate;
+        return label;
+    }
+
+    static RectTransform BuildCreatePanel(RectTransform canvas, Sprite round, out CreateDancePanel component)
+    {
+        var panel = NewRect("CreatePanel", canvas);
+        Stretch(panel);
+        var box = NewRect("Box", panel);
+        Anchor(box, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(1500, 900));
+        AddImage(box, round, PanelDark, true);
+
+        var title = AddText(box, "Title", "Criar dança", 72, Color.white, TextAnchor.UpperCenter, FontStyle.Bold);
+        Place(title.rectTransform, 100, 28, 1300, 100);
+        var sub = AddText(box, "Subtitle",
+            "Escolha um vídeo com a música e o(s) dançarino(s). O jogo separa a música, o vídeo da dança e os movimentos.",
+            28, new Color(0.85f, 0.8f, 1f), TextAnchor.UpperLeft, FontStyle.Normal);
+        Place(sub.rectTransform, 60, 125, 1380, 80);
+
+        // Vídeo
+        FieldLabel(box, "VideoTitle", "Vídeo da dança", 230);
+        var videoLabel = ValueBox(box, "VideoBox", "nenhum vídeo escolhido", round, 450, 230, 700);
+        var pickVideo = MakeSmallButton(box, "PickVideoButton", "ESCOLHER", round, Cyan);
+        Place((RectTransform)pickVideo.transform, 1170, 230, 270, 70);
+
+        // Nome
+        FieldLabel(box, "NameTitle", "Nome na galeria", 330);
+        var inputRt = NewRect("NameInput", box);
+        Place(inputRt, 450, 330, 990, 70);
+        var inputBg = AddImage(inputRt, round, new Color(1f, 1f, 1f, 0.16f), true);
+        var inputText = AddText(inputRt, "Text", "", 32, Color.white, TextAnchor.MiddleLeft, FontStyle.Normal);
+        var placeholder = AddText(inputRt, "Placeholder", "Ex.: Sofrência do Verão", 32,
+            new Color(1f, 1f, 1f, 0.4f), TextAnchor.MiddleLeft, FontStyle.Italic);
+        foreach (var t in new[] { inputText, placeholder })
+        {
+            Stretch(t.rectTransform);
+            t.rectTransform.offsetMin = new Vector2(20, 6);
+            t.rectTransform.offsetMax = new Vector2(-20, -6);
+            t.horizontalOverflow = HorizontalWrapMode.Overflow;
+        }
+        inputText.supportRichText = false;
+        var input = inputRt.gameObject.AddComponent<InputField>();
+        input.targetGraphic = inputBg;
+        input.textComponent = inputText;
+        input.placeholder = placeholder;
+        input.lineType = InputField.LineType.SingleLine;
+        input.characterLimit = 60;
+
+        // Música (opcional)
+        FieldLabel(box, "MusicTitle", "Música (opcional)", 430);
+        var musicLabel = ValueBox(box, "MusicBox", "a do próprio vídeo", round, 450, 430, 480);
+        var pickMusic = MakeSmallButton(box, "PickMusicButton", "ESCOLHER", round, Cyan);
+        Place((RectTransform)pickMusic.transform, 950, 430, 270, 70);
+        var clearMusic = MakeSmallButton(box, "ClearMusicButton", "LIMPAR", round, Slate);
+        Place((RectTransform)clearMusic.transform, 1230, 430, 210, 70);
+
+        // Andamento
+        var progress = NewRect("Progress", box);
+        Place(progress, 60, 535, 1380, 100);
+        var bar = NewRect("Bar", progress);
+        Place(bar, 0, 0, 1380, 34);
+        AddImage(bar, null, new Color(1f, 1f, 1f, 0.15f), false).raycastTarget = false;
+        var fill = NewRect("Fill", bar);
+        fill.anchorMin = new Vector2(0, 0);
+        fill.anchorMax = new Vector2(0, 1);
+        fill.pivot = new Vector2(0, 0.5f);
+        fill.offsetMin = Vector2.zero;
+        fill.offsetMax = Vector2.zero;
+        AddImage(fill, null, Pink, false).raycastTarget = false;
+        var stage = AddText(progress, "Stage", "", 30, Color.white, TextAnchor.MiddleLeft, FontStyle.Normal);
+        Place(stage.rectTransform, 0, 46, 1380, 50);
+
+        var message = AddText(box, "Message", "", 30, new Color(0.9f, 0.88f, 1f), TextAnchor.UpperLeft, FontStyle.Normal);
+        Place(message.rectTransform, 60, 650, 1380, 130);
+
+        // Botões de baixo
+        var back = MakeSmallButton(box, "BackButton", "< VOLTAR", round, Slate);
+        Anchor((RectTransform)back.transform, new Vector2(0, 0), new Vector2(0, 0), new Vector2(60, 40), new Vector2(260, 90));
+        var train = MakeSmallButton(box, "TrainButton", "TREINAR", round, Pink);
+        Anchor((RectTransform)train.transform, new Vector2(1, 0), new Vector2(1, 0), new Vector2(-60, 40), new Vector2(420, 90));
+        var gallery = MakeSmallButton(box, "GalleryButton", "VER NA GALERIA", round, Violet);
+        Anchor((RectTransform)gallery.transform, new Vector2(1, 0), new Vector2(1, 0), new Vector2(-500, 40), new Vector2(420, 90));
+        var install = MakeSmallButton(box, "InstallButton", "INSTALAR PYTHON", round, Cyan);
+        Anchor((RectTransform)install.transform, new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0, 40), new Vector2(480, 90));
+
+        component = panel.gameObject.AddComponent<CreateDancePanel>();
+        var so = new SerializedObject(component);
+        Set(so, "videoLabel", videoLabel);
+        Set(so, "musicLabel", musicLabel);
+        Set(so, "nameInput", input);
+        Set(so, "pickVideoButton", pickVideo);
+        Set(so, "pickMusicButton", pickMusic);
+        Set(so, "clearMusicButton", clearMusic);
+        Set(so, "trainButton", train);
+        Set(so, "trainLabel", train.GetComponentInChildren<Text>());
+        Set(so, "backButton", back);
+        Set(so, "galleryButton", gallery);
+        Set(so, "installButton", install);
+        Set(so, "progressGroup", progress.gameObject);
+        Set(so, "progressFill", fill);
+        Set(so, "stageLabel", stage);
+        Set(so, "messageLabel", message);
+        so.ApplyModifiedPropertiesWithoutUndo();
+
+        progress.gameObject.SetActive(false);
+        gallery.gameObject.SetActive(false);
+        install.gameObject.SetActive(false);
+        return panel;
+    }
+
+    static RectTransform BuildPlayersPanel(RectTransform canvas, Sprite round, out Text title, out Text subtitle,
+        out RectTransform container, out Button template, out Button back)
+    {
+        var panel = NewRect("PlayersPanel", canvas);
+        Stretch(panel);
+
+        title = AddText(panel, "Title", "Quantos vão dançar?", 84, Color.white, TextAnchor.UpperCenter, FontStyle.Bold);
+        Anchor(title.rectTransform, new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -60), new Vector2(1400, 110));
+        subtitle = AddText(panel, "Subtitle", "", 40, new Color(0.85f, 0.8f, 1f), TextAnchor.UpperCenter, FontStyle.Normal);
+        Anchor(subtitle.rectTransform, new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -185), new Vector2(1400, 60));
+        back = MakeSmallButton(panel, "BackButton", "< VOLTAR", round, Slate);
+        Anchor((RectTransform)back.transform, new Vector2(0, 1), new Vector2(0, 1), new Vector2(90, -70), new Vector2(260, 80));
+
+        container = NewRect("Buttons", panel);
+        Anchor(container, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, -20), new Vector2(1800, 260));
+        var hlg = container.gameObject.AddComponent<HorizontalLayoutGroup>();
+        hlg.spacing = 30;
+        hlg.childAlignment = TextAnchor.MiddleCenter;
+        hlg.childControlWidth = true;
+        hlg.childControlHeight = true;
+        hlg.childForceExpandWidth = false;
+        hlg.childForceExpandHeight = false;
+
+        template = MakeMenuButton(container, "PlayersButtonTemplate", "1\nJOGADOR", round, Pink);
+        var le = template.GetComponent<LayoutElement>();
+        le.preferredWidth = 270;
+        le.preferredHeight = 220;
+        template.GetComponentInChildren<Text>().fontSize = 40;
+        return panel;
+    }
+
     // ---------------------------------------------------------------- fundo
 
-    static void BuildBackground(RectTransform canvas, Sprite gradient, Sprite circle)
+    internal static void BuildBackground(RectTransform canvas, Sprite gradient, Sprite circle)
     {
         var bg = NewRect("Background", canvas);
         Stretch(bg);
@@ -206,7 +397,7 @@ public static class MainMenuSceneBuilder
         MakeDeco(bg, circle, new Vector2(760, 330), 300, new Color(1f, 0.85f, 0.3f, 0.12f));
     }
 
-    static void MakeDeco(RectTransform parent, Sprite circle, Vector2 pos, float size, Color color)
+    internal static void MakeDeco(RectTransform parent, Sprite circle, Vector2 pos, float size, Color color)
     {
         var rt = NewRect("Deco", parent);
         Anchor(rt, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), pos, new Vector2(size, size));
@@ -215,7 +406,7 @@ public static class MainMenuSceneBuilder
 
     // ------------------------------------------------------------- card prefab
 
-    static SongCard BuildCardPrefab(Sprite round)
+    internal static SongCard BuildCardPrefab(Sprite round)
     {
         var root = new GameObject("SongCard", typeof(RectTransform));
         var rt = (RectTransform)root.transform;
@@ -264,7 +455,7 @@ public static class MainMenuSceneBuilder
 
     // ----------------------------------------------------------------- botões
 
-    static Button MakeMenuButton(RectTransform parent, string name, string label, Sprite round, Color color)
+    internal static Button MakeMenuButton(RectTransform parent, string name, string label, Sprite round, Color color)
     {
         var rt = NewRect(name, parent);
         var img = AddImage(rt, round, color, true);
@@ -278,7 +469,7 @@ public static class MainMenuSceneBuilder
         return btn;
     }
 
-    static Button MakeSmallButton(RectTransform parent, string name, string label, Sprite round, Color color)
+    internal static Button MakeSmallButton(RectTransform parent, string name, string label, Sprite round, Color color)
     {
         var rt = NewRect(name, parent);
         var img = AddImage(rt, round, color, true);
@@ -290,7 +481,7 @@ public static class MainMenuSceneBuilder
         return btn;
     }
 
-    static void SetTint(Button btn)
+    internal static void SetTint(Button btn)
     {
         var c = btn.colors;
         c.normalColor = Color.white;
@@ -303,14 +494,14 @@ public static class MainMenuSceneBuilder
 
     // ---------------------------------------------------------- helpers de UI
 
-    static RectTransform NewRect(string name, Transform parent)
+    internal static RectTransform NewRect(string name, Transform parent)
     {
         var go = new GameObject(name, typeof(RectTransform));
         go.transform.SetParent(parent, false);
         return (RectTransform)go.transform;
     }
 
-    static void Stretch(RectTransform rt)
+    internal static void Stretch(RectTransform rt)
     {
         rt.anchorMin = Vector2.zero;
         rt.anchorMax = Vector2.one;
@@ -318,7 +509,7 @@ public static class MainMenuSceneBuilder
         rt.offsetMax = Vector2.zero;
     }
 
-    static void Anchor(RectTransform rt, Vector2 min, Vector2 max, Vector2 pos, Vector2 size)
+    internal static void Anchor(RectTransform rt, Vector2 min, Vector2 max, Vector2 pos, Vector2 size)
     {
         rt.anchorMin = min;
         rt.anchorMax = max;
@@ -327,7 +518,7 @@ public static class MainMenuSceneBuilder
         rt.sizeDelta = size;
     }
 
-    static Image AddImage(RectTransform rt, Sprite sprite, Color color, bool sliced)
+    internal static Image AddImage(RectTransform rt, Sprite sprite, Color color, bool sliced)
     {
         var img = rt.gameObject.AddComponent<Image>();
         img.sprite = sprite;
@@ -336,7 +527,7 @@ public static class MainMenuSceneBuilder
         return img;
     }
 
-    static Text AddText(Transform parent, string name, string content, int size, Color color, TextAnchor anchor, FontStyle style)
+    internal static Text AddText(Transform parent, string name, string content, int size, Color color, TextAnchor anchor, FontStyle style)
     {
         var rt = NewRect(name, parent);
         var t = rt.gameObject.AddComponent<Text>();
@@ -352,16 +543,16 @@ public static class MainMenuSceneBuilder
         return t;
     }
 
-    static void Set(SerializedObject so, string prop, Object value)
+    internal static void Set(SerializedObject so, string prop, Object value)
     {
         var p = so.FindProperty(prop);
         if (p == null) { Debug.LogError("[JustDance] Campo não encontrado: " + prop); return; }
         p.objectReferenceValue = value;
     }
 
-    static void Set(SerializedObject so, string prop, Component value) => Set(so, prop, (Object)value);
+    internal static void Set(SerializedObject so, string prop, Component value) => Set(so, prop, (Object)value);
 
-    static void AddToBuildSettings(string scenePath)
+    internal static void AddToBuildSettings(string scenePath)
     {
         var list = new System.Collections.Generic.List<EditorBuildSettingsScene>(EditorBuildSettings.scenes);
         list.RemoveAll(s => s.path == scenePath);
@@ -371,7 +562,7 @@ public static class MainMenuSceneBuilder
 
     // ------------------------------------------------ sprites placeholder (PNG)
 
-    static Sprite CreateRoundedRect(string path, int size, int radius)
+    internal static Sprite CreateRoundedRect(string path, int size, int radius)
     {
         var tex = new Texture2D(size, size, TextureFormat.RGBA32, false);
         float half = size / 2f;
@@ -390,7 +581,7 @@ public static class MainMenuSceneBuilder
         return SaveSprite(tex, path, new Vector4(radius, radius, radius, radius));
     }
 
-    static Sprite CreateCircle(string path, int size)
+    internal static Sprite CreateCircle(string path, int size)
     {
         var tex = new Texture2D(size, size, TextureFormat.RGBA32, false);
         float half = size / 2f;
@@ -405,7 +596,7 @@ public static class MainMenuSceneBuilder
         return SaveSprite(tex, path, Vector4.zero);
     }
 
-    static Sprite CreateGradient(string path)
+    internal static Sprite CreateGradient(string path)
     {
         var tex = new Texture2D(4, 256, TextureFormat.RGBA32, false);
         var top = new Color(0.07f, 0.03f, 0.18f);
@@ -418,7 +609,7 @@ public static class MainMenuSceneBuilder
         return SaveSprite(tex, path, Vector4.zero);
     }
 
-    static Sprite SaveSprite(Texture2D tex, string assetPath, Vector4 border)
+    internal static Sprite SaveSprite(Texture2D tex, string assetPath, Vector4 border)
     {
         File.WriteAllBytes(assetPath, tex.EncodeToPNG());
         Object.DestroyImmediate(tex);

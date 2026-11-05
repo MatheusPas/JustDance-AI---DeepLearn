@@ -73,3 +73,10 @@ crashlytics-build.properties
 # Temporary auto-generated Android Assets
 /[Aa]ssets/[Ss]treamingAssets/aa.meta
 /[Aa]ssets/[Ss]treamingAssets/aa/*
+
+# --- JustDance AI ---
+# Python portatil e dados do jogo: grandes e recriaveis (Tools/setup_python_runtime.bat)
+/PythonRuntime/
+/GameData/
+__pycache__/
+*.pyc

@@ -1,0 +1,12 @@
+# Testado com Python 3.11 (setembro de 2026).
+#
+# Use apenas opencv-contrib-python (o mediapipe já depende dele). Instalar também
+# o "opencv-python" causa conflito de import do cv2.
+#
+# O imageio-ffmpeg traz o binário do ffmpeg: é ele que separa a música do vídeo.
+# Não precisa instalar o ffmpeg no sistema.
+
+mediapipe==1.0.1
+opencv-contrib-python==4.13.0.92
+imageio-ffmpeg==0.6.0
+pygame==2.6.1

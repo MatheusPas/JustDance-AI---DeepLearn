@@ -45,6 +45,7 @@ public static class SongLibrary
     {
         var candidates = new List<string>();
         if (!string.IsNullOrWhiteSpace(overridePath)) candidates.Add(overridePath);
+        candidates.Add(JustDancePaths.LibraryJson);
         candidates.Add(Path.Combine(Application.streamingAssetsPath, "library.json"));
         candidates.Add(Path.Combine(Application.persistentDataPath, "library.json"));
 
