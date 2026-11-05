@@ -8,11 +8,7 @@ Material:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: UIInvert
-<<<<<<< HEAD
-  m_Shader: {fileID: 4800000, guid: 2834c0f33465f9647944050a6fb198e2, type: 3}
-=======
   m_Shader: {fileID: 4800000, guid: 648d7ad6f7ccf8a4a9b3fe00e7486569, type: 3}
->>>>>>> b9184c5156cf91cf76246d1240e42f59b59065d6
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords: []
