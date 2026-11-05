@@ -192,7 +192,7 @@ public sealed class SidecarClient : IDisposable
             Seq = ReadU32(p, 0),
             TMs = (int)ReadU32(p, 4),
             DetectMs = BitConverter.ToSingle(p, 8),
-            Count = Math.Min(p[12], PoseProtocol.MaxPlayers),
+            Count = Math.Min((int)p[12], PoseProtocol.MaxPlayers),
         };
         int o = PoseProtocol.ResultHeadSize;
         for (int i = 0; i < f.Count; i++)
