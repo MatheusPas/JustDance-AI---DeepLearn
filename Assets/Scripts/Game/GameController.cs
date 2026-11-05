@@ -114,8 +114,9 @@ public class GameController : MonoBehaviour
         menuButton.onClick.AddListener(BackToMenu);
         endPanel.SetActive(false);
         countdownLabel.text = "";
-        // Antes da primeira imagem: a referência fica branca (em negativo vira preto) e a câmera preta.
-        referenceImage.texture = Texture2D.whiteTexture;
+        // Antes da primeira imagem tudo fica preto (em negativo, o branco é que vira preto).
+        referenceImage.texture = referenceImage.material != null && referenceImage.material.HasProperty("_Invert")
+            ? Texture2D.whiteTexture : Texture2D.blackTexture;
         cameraImage.texture = Texture2D.blackTexture;
         scoreRowTemplate.gameObject.SetActive(false);
     }
