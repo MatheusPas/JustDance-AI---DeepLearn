@@ -7,8 +7,14 @@ using UnityEngine.InputSystem.UI;
 using UnityEngine.UI;
 
 /// <summary>
+<<<<<<< HEAD
 /// Gera a cena Assets/Scenes/Game.unity no estilo Just Dance: vídeo da dança em NEGATIVO
 /// ocupando quase a tela toda, cartões dos jogadores no topo e a câmera numa faixa embaixo.
+=======
+/// Gera a cena Assets/Scenes/Game.unity: vídeo do dançarino em TELA CHEIA (é ele que o
+/// jogador precisa enxergar), câmera do jogador em destaque no canto inferior esquerdo
+/// (com o esqueleto por cima), placar no canto direito e barra de título no topo.
+>>>>>>> b9184c5156cf91cf76246d1240e42f59b59065d6
 /// Menu: JustDance > Build Game Scene   (ou Build All para menu + jogo).
 /// </summary>
 public static class GameSceneBuilder
@@ -16,6 +22,7 @@ public static class GameSceneBuilder
     const string ScenePath = "Assets/Scenes/Game.unity";
     const string MaterialDir = "Assets/Materials";
     const string MaterialPath = "Assets/Materials/UIInvert.mat";
+<<<<<<< HEAD
     // Layout (estilo Just Dance): o vídeo da dança ocupa quase toda a tela, os jogadores
     // aparecem em cartões no topo e a câmera fica numa faixa embaixo.
     const float CameraStrip = 0.25f;      // altura da faixa de baixo (fração da tela)
@@ -23,6 +30,13 @@ public static class GameSceneBuilder
     const float CardWidth = 290f;         // cartão de cada jogador no topo
     const float CardMinWidth = 190f;      // com muitos jogadores os cartões encolhem até aqui
     const float CardHeight = 118f;
+=======
+    // Vídeo do dançarino em negativo: desligado porque estourava a luz e dificultava ver os
+    // movimentos. O shader/material continuam no projeto; troque para true para voltar.
+    const bool ReferenceInNegative = false;
+    static readonly Vector2 CameraSize = new Vector2(560, 420);   // 4:3, como a webcam
+    const float ScoreWidth = 460f;
+>>>>>>> b9184c5156cf91cf76246d1240e42f59b59065d6
 
     [MenuItem("JustDance/Build All (Menu + Game)")]
     public static void BuildAll()
@@ -44,7 +58,7 @@ public static class GameSceneBuilder
 
         Sprite round = MainMenuSceneBuilder.CreateRoundedRect(MainMenuSceneBuilder.ArtDir + "/rounded.png", 128, 40);
         Sprite gradient = MainMenuSceneBuilder.CreateGradient(MainMenuSceneBuilder.ArtDir + "/background_gradient.png");
-        Material invert = GetInvertMaterial();
+        Material invert = ReferenceInNegative ? GetInvertMaterial() : null;
 
         var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
 
@@ -70,17 +84,25 @@ public static class GameSceneBuilder
         MainMenuSceneBuilder.Stretch(bg);
         MainMenuSceneBuilder.AddImage(bg, gradient, Color.white, false).raycastTarget = false;
 
+<<<<<<< HEAD
         // ---------- Vídeo da dança (em negativo): quase a tela inteira ----------
         var refBlock = MainMenuSceneBuilder.NewRect("ReferenceBlock", canvas);
         refBlock.anchorMin = new Vector2(0, CameraStrip);
         refBlock.anchorMax = new Vector2(1, 1);
         refBlock.offsetMin = Vector2.zero;
         refBlock.offsetMax = Vector2.zero;
+=======
+        // ---------- Vídeo do dançarino (tela cheia) ----------
+        var refBlock = MainMenuSceneBuilder.NewRect("ReferenceBlock", canvas);
+        MainMenuSceneBuilder.Stretch(refBlock);
+        MainMenuSceneBuilder.AddImage(refBlock, null, Color.black, false).raycastTarget = false;
+>>>>>>> b9184c5156cf91cf76246d1240e42f59b59065d6
         RawImage reference;
         AspectRatioFitter referenceFitter;
         NewVideoImage("Reference", refBlock, out reference, out referenceFitter);
         if (invert != null) reference.material = invert;
 
+<<<<<<< HEAD
         // ---------- Faixa de baixo: câmera do jogador no centro ----------
         var strip = MainMenuSceneBuilder.NewRect("PlayerStrip", canvas);
         strip.anchorMin = Vector2.zero;
@@ -92,6 +114,25 @@ public static class GameSceneBuilder
         var camBlock = NewBlock("CameraBlock", strip, round,
             new Vector2(0.5f, 0), new Vector2(0.5f, 1),
             new Vector2(-CameraBoxWidth / 2f, 14), new Vector2(CameraBoxWidth / 2f, -22));
+=======
+        // Barra escura no topo para o título e o tempo ficarem legíveis sobre o vídeo
+        var topBar = MainMenuSceneBuilder.NewRect("TopBar", canvas);
+        MainMenuSceneBuilder.Anchor(topBar, new Vector2(0, 1), new Vector2(1, 1), Vector2.zero, new Vector2(0, 100));
+        topBar.pivot = new Vector2(0.5f, 1);
+        MainMenuSceneBuilder.AddImage(topBar, null, new Color(0.04f, 0.01f, 0.10f, 0.72f), false).raycastTarget = false;
+
+        // ---------- Câmera do jogador (canto inferior esquerdo, com moldura) ----------
+        var camFrame = MainMenuSceneBuilder.NewRect("CameraFrame", canvas);
+        MainMenuSceneBuilder.Anchor(camFrame, Vector2.zero, Vector2.zero, new Vector2(30, 30), CameraSize + new Vector2(12, 12));
+        camFrame.pivot = Vector2.zero;
+        MainMenuSceneBuilder.AddImage(camFrame, round, MainMenuSceneBuilder.Pink, true).raycastTarget = false;
+        var camBlock = MainMenuSceneBuilder.NewRect("CameraBlock", camFrame);
+        MainMenuSceneBuilder.Stretch(camBlock);
+        camBlock.offsetMin = new Vector2(6, 6);
+        camBlock.offsetMax = new Vector2(-6, -6);
+        MainMenuSceneBuilder.AddImage(camBlock, round, new Color(0.03f, 0.01f, 0.09f, 1f), true).raycastTarget = false;
+        camBlock.gameObject.AddComponent<RectMask2D>();
+>>>>>>> b9184c5156cf91cf76246d1240e42f59b59065d6
         RawImage camImage;
         AspectRatioFitter camFitter;
         NewVideoImage("Camera", camBlock, out camImage, out camFitter);
@@ -102,9 +143,18 @@ public static class GameSceneBuilder
         var skeleton = skeletonGo.GetComponent<SkeletonGraphic>();
         MainMenuSceneBuilder.Stretch(skeleton.rectTransform);
         skeleton.raycastTarget = false;
+<<<<<<< HEAD
         var camTag = MainMenuSceneBuilder.AddText(camBlock, "Tag", "VOCÊ", 20, new Color(1f, 1f, 1f, 0.6f),
             TextAnchor.UpperLeft, FontStyle.Bold);
         MainMenuSceneBuilder.Place(camTag.rectTransform, 12, 6, 150, 28);
+=======
+        var camTag = MainMenuSceneBuilder.NewRect("Tag", camFrame);
+        MainMenuSceneBuilder.Anchor(camTag, new Vector2(0, 1), new Vector2(0, 1), new Vector2(0, 0), new Vector2(150, 46));
+        camTag.pivot = new Vector2(0, 0);
+        MainMenuSceneBuilder.AddImage(camTag, round, MainMenuSceneBuilder.Pink, true).raycastTarget = false;
+        var camTagText = MainMenuSceneBuilder.AddText(camTag, "Text", "VOCÊ", 28, Color.white, TextAnchor.MiddleCenter, FontStyle.Bold);
+        MainMenuSceneBuilder.Stretch(camTagText.rectTransform);
+>>>>>>> b9184c5156cf91cf76246d1240e42f59b59065d6
 
         // Linha do tempo: na divisa entre o vídeo e a faixa de baixo
         var progressBar = MainMenuSceneBuilder.NewRect("ProgressBar", strip);
@@ -122,6 +172,7 @@ public static class GameSceneBuilder
         fill.offsetMax = Vector2.zero;
         MainMenuSceneBuilder.AddImage(fill, null, MainMenuSceneBuilder.Pink, false).raycastTarget = false;
 
+<<<<<<< HEAD
         // À esquerda da câmera: nome da música e tempo
         var title = MainMenuSceneBuilder.AddText(strip, "Title", "", 44, Color.white, TextAnchor.LowerLeft, FontStyle.Bold);
         MainMenuSceneBuilder.Anchor(title.rectTransform, new Vector2(0, 0.5f), new Vector2(0, 0.5f), new Vector2(40, 34), new Vector2(680, 64));
@@ -154,12 +205,48 @@ public static class GameSceneBuilder
         hlg.childControlHeight = true;
         hlg.childForceExpandWidth = false;
         hlg.childForceExpandHeight = false;
+=======
+        var title = MainMenuSceneBuilder.AddText(canvas, "Title", "", 46, Color.white, TextAnchor.MiddleLeft, FontStyle.Bold);
+        MainMenuSceneBuilder.Place(title.rectTransform, 40, 22, 1200, 60);
+        title.horizontalOverflow = HorizontalWrapMode.Overflow;
+        var time = MainMenuSceneBuilder.AddText(canvas, "Time", "0:00 / 0:00", 40, new Color(0.9f, 0.88f, 1f),
+            TextAnchor.MiddleRight, FontStyle.Bold);
+        MainMenuSceneBuilder.Anchor(time.rectTransform, new Vector2(1, 1), new Vector2(1, 1), new Vector2(-30, -20), new Vector2(420, 60));
+        time.rectTransform.pivot = new Vector2(1, 1);
+
+        var status = MainMenuSceneBuilder.AddText(canvas, "Status", "Iniciando...", 28, new Color(1f, 1f, 1f, 0.75f),
+            TextAnchor.MiddleLeft, FontStyle.Normal);
+        MainMenuSceneBuilder.Anchor(status.rectTransform, new Vector2(1, 0), new Vector2(1, 0), new Vector2(-30, 10), new Vector2(1200, 34));
+        status.rectTransform.pivot = new Vector2(1, 0);
+        status.alignment = TextAnchor.MiddleRight;
+        var statusShadow = status.gameObject.AddComponent<Outline>();
+        statusShadow.effectColor = new Color(0f, 0f, 0f, 0.8f);
+
+        // Placar (canto superior direito, sobre o vídeo)
+        var scoreColumn = MainMenuSceneBuilder.NewRect("Scoreboard", canvas);
+        scoreColumn.anchorMin = new Vector2(1, 1);
+        scoreColumn.anchorMax = new Vector2(1, 1);
+        scoreColumn.pivot = new Vector2(1, 1);
+        scoreColumn.anchoredPosition = new Vector2(-30, -125);
+        scoreColumn.sizeDelta = new Vector2(ScoreWidth, 700);
+        var vlg = scoreColumn.gameObject.AddComponent<VerticalLayoutGroup>();
+        vlg.spacing = 20;
+        vlg.childAlignment = TextAnchor.UpperCenter;
+        vlg.childControlWidth = true;
+        vlg.childControlHeight = false;
+        vlg.childForceExpandWidth = true;
+        vlg.childForceExpandHeight = false;
+>>>>>>> b9184c5156cf91cf76246d1240e42f59b59065d6
         var rowTemplate = BuildScoreRowTemplate(scoreColumn, round);
 
         // Contagem regressiva no meio do vídeo
         var countdown = MainMenuSceneBuilder.AddText(canvas, "Countdown", "", 300, Color.white, TextAnchor.MiddleCenter, FontStyle.Bold);
+<<<<<<< HEAD
         float videoCenter = (CameraStrip + 1f) / 2f;
         MainMenuSceneBuilder.Anchor(countdown.rectTransform, new Vector2(0.5f, videoCenter), new Vector2(0.5f, videoCenter),
+=======
+        MainMenuSceneBuilder.Anchor(countdown.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
+>>>>>>> b9184c5156cf91cf76246d1240e42f59b59065d6
             Vector2.zero, new Vector2(1000, 420));
         countdown.horizontalOverflow = HorizontalWrapMode.Overflow;
         var outline = countdown.gameObject.AddComponent<Outline>();
@@ -237,19 +324,6 @@ public static class GameSceneBuilder
         return mat;
     }
 
-    /// <summary>Moldura arredondada; o conteúdo entra como filho esticado dentro dela.</summary>
-    static RectTransform NewBlock(string name, RectTransform parent, Sprite round,
-        Vector2 anchorMin, Vector2 anchorMax, Vector2 offsetMin, Vector2 offsetMax)
-    {
-        var rt = MainMenuSceneBuilder.NewRect(name, parent);
-        rt.anchorMin = anchorMin;
-        rt.anchorMax = anchorMax;
-        rt.offsetMin = offsetMin;
-        rt.offsetMax = offsetMax;
-        MainMenuSceneBuilder.AddImage(rt, round, new Color(0.03f, 0.01f, 0.09f, 0.92f), true).raycastTarget = false;
-        return rt;
-    }
-
     /// <summary>RawImage que cabe inteira dentro da moldura mantendo a proporção da imagem.</summary>
     static void NewVideoImage(string name, RectTransform block, out RawImage raw, out AspectRatioFitter fitter)
     {
@@ -270,10 +344,15 @@ public static class GameSceneBuilder
     {
         var rt = MainMenuSceneBuilder.NewRect("ScoreRowTemplate", parent);
         var le = rt.gameObject.AddComponent<LayoutElement>();
+<<<<<<< HEAD
         le.preferredWidth = CardWidth;
         le.minWidth = CardMinWidth;
         le.preferredHeight = CardHeight;
         MainMenuSceneBuilder.AddImage(rt, round, new Color(0.06f, 0.02f, 0.14f, 0.72f), true).raycastTarget = false;
+=======
+        le.preferredHeight = 150;
+        MainMenuSceneBuilder.AddImage(rt, round, new Color(0.10f, 0.05f, 0.22f, 0.80f), true).raycastTarget = false;
+>>>>>>> b9184c5156cf91cf76246d1240e42f59b59065d6
 
         var accent = MainMenuSceneBuilder.NewRect("Accent", rt);
         MainMenuSceneBuilder.Place(accent, 18, 18, 24, 24);
