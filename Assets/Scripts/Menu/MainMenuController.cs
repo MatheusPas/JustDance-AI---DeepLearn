@@ -59,6 +59,16 @@ public class MainMenuController : MonoBehaviour
 
     void Awake()
     {
+        // Cena gerada por uma versão antiga do MainMenuSceneBuilder: faltam os painéis novos.
+        if (createPanel == null || playersPanel == null || createDance == null || pythonStatusLabel == null ||
+            playersButtonTemplate == null || playersBackButton == null)
+        {
+            Debug.LogError("[JustDance] A cena MainMenu está desatualizada. Pare o Play e rode " +
+                           "JustDance > Build All (Menu + Game) para gerar as cenas de novo.");
+            enabled = false;
+            return;
+        }
+
         playButton.onClick.AddListener(OpenGallery);
         createButton.onClick.AddListener(() => Show(createPanel));
         optionsButton.onClick.AddListener(() => ShowInfo("Opções",

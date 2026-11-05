@@ -2,7 +2,8 @@ using UnityEngine;
 using UnityEngine.UI;
 
 /// <summary>
-/// Uma linha do placar: cor e nome do jogador, nota atual e a média da música até agora.
+/// Cartão de um jogador no topo da tela: cor e nome, média da música até agora e a
+/// avaliação do momento (que "pula" e muda de cor quando muda de nível).
 /// </summary>
 public class ScoreRow : MonoBehaviour
 {
@@ -61,6 +62,27 @@ public class ScoreRow : MonoBehaviour
         {
             shownFeedback = feedback;
             feedbackLabel.text = feedback;
+            feedbackLabel.color = RatingColor(smoothed);
+            pop = 1f;
         }
+    }
+
+    float pop;
+
+    void Update()
+    {
+        if (pop <= 0f) return;
+        pop = Mathf.Max(0f, pop - Time.unscaledDeltaTime * 4f);
+        float scale = 1f + 0.35f * pop * pop;
+        feedbackLabel.rectTransform.localScale = new Vector3(scale, scale, 1f);
+    }
+
+    static Color RatingColor(float score)
+    {
+        if (score >= 85f) return new Color(1f, 0.84f, 0.25f);   // PERFEITO!  dourado
+        if (score >= 70f) return new Color(0.45f, 1f, 0.55f);   // MUITO BEM  verde
+        if (score >= 50f) return new Color(0.4f, 0.9f, 1f);     // BOM        ciano
+        if (score >= 30f) return new Color(1f, 0.65f, 0.3f);    // QUASE      laranja
+        return new Color(1f, 0.45f, 0.5f);                      // TENTE DE NOVO
     }
 }
