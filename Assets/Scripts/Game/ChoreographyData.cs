@@ -80,22 +80,48 @@ public sealed class Choreography
     /// </summary>
     public bool TryGetAngles(int dancerId, double t, float[] dest)
     {
+        return TryGetAnglesAt(dancerId, IndexAt(t), dest);
+    }
+
+    bool TryGetAnglesAt(int dancerId, int i, float[] dest)
+    {
         PosesPlayer p;
         if (!byId.TryGetValue(dancerId, out p)) return false;
-        int i = IndexAt(t);
         if (p.present[i] == 0) return false;
         int o = i * AngleCount;
         for (int k = 0; k < AngleCount; k++)
             dest[k] = p.valid[o + k] != 0 ? p.angles[o + k] : float.NaN;
         return true;
     }
+
+    /// <summary>
+    /// Melhor nota do jogador contra o dançarino numa janela em volta de t: o jogador sempre
+    /// reage um pouco depois de ver o movimento (e a câmera também atrasa), então exigir o
+    /// instante exato pune quem está dançando certo. buffer = float[AngleCount] de trabalho.
+    /// </summary>
+    public bool TryBestScore(int dancerId, double t, float[] player, float[] buffer, out float best)
+    {
+        best = 0f;
+        bool any = false;
+        int i0 = IndexAt(t - Scoring.LagSeconds), i1 = IndexAt(t + Scoring.LeadSeconds);
+        for (int i = i0; i <= i1; i++)
+        {
+            float s;
+            if (!TryGetAnglesAt(dancerId, i, buffer) || !Scoring.TryScore(player, buffer, out s)) continue;
+            any = true;
+            if (s > best) best = s;
+        }
+        return any;
+    }
 }
 
 /// <summary>A mesma pontuação do Python (pose_utils.score_angles).</summary>
 public static class Scoring
 {
-    public const float ToleranceDegrees = 35f;
+    public const float ToleranceDegrees = 40f;   // era 35: com a câmera real ficava difícil demais
     public const int MinJoints = 3;
+    public const double LagSeconds = 0.35;      // até quanto o jogador pode estar atrasado
+    public const double LeadSeconds = 0.10;     // ...ou adiantado em relação ao dançarino
 
     /// <summary>
     /// 0..100 comparando só as articulações confiáveis nos dois lados.

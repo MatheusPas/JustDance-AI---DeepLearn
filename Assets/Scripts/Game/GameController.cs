@@ -203,6 +203,10 @@ public class GameController : MonoBehaviour
         yield return PrepareVideo(videoPath);
         if (failure != null) { Fail(failure); yield break; }
 
+        // Tela "Quem você vai ser?" (DancerPicker): a contagem só começa depois da escolha.
+        if (GameSession.ChoosingDancers) SetStatus("Escolha o seu dançarino");
+        while (GameSession.ChoosingDancers) yield return null;
+
         BeginRun();
     }
 
@@ -471,13 +475,14 @@ public class GameController : MonoBehaviour
             seen[pid] = true;
 
             float score;
-            if (!choreo.TryGetAngles(pid, tFrame - ScoreTimeOffset, refAngles)) continue;   // dançarino fora de cena
-            if (Scoring.TryScore(f.Angles[i], refAngles, out score)) rows[pid].Report(score);
+            int dancer = GameSession.DancerFor(pid);                                         // quem ele escolheu seguir
+            if (!choreo.TryGetAngles(dancer, tFrame - ScoreTimeOffset, refAngles)) continue; // dançarino fora de cena
+            if (choreo.TryBestScore(dancer, tFrame - ScoreTimeOffset, f.Angles[i], refAngles, out score)) rows[pid].Report(score);
         }
 
         // Jogador que a câmera não achou, enquanto o dançarino está em cena: conta zero.
         for (int pid = 0; pid < rows.Length; pid++)
-            if (!seen[pid] && choreo.TryGetAngles(pid, tFrame - ScoreTimeOffset, refAngles))
+            if (!seen[pid] && choreo.TryGetAngles(GameSession.DancerFor(pid), tFrame - ScoreTimeOffset, refAngles))
                 rows[pid].ReportMissing();
     }
 

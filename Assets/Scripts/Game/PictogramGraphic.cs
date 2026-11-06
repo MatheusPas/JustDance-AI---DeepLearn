@@ -20,7 +20,10 @@ public class PictogramGraphic : MaskableGraphic
     const int CircleSegments = 12;
 
     [System.NonSerialized] public float[][] Figures;   // preenchidos em tempo de execução
+    [System.NonSerialized] public float[][][] Paths;   // por dançarino: caminhos de mãos/pés (x,y,x,y...) até a pose
     [System.NonSerialized] public Color[] Colors;
+    static readonly Color ArrowColor = new Color(1f, 0.85f, 0.28f);
+    static readonly Color ArrowEdge = new Color(0.08f, 0.02f, 0.16f, 0.9f);
     public bool FrameOnly;                                   // só a moldura (alvo da faixa)
     public Color Background = new Color(0.10f, 0.05f, 0.22f, 0.97f);
     public Color Border = new Color(1f, 1f, 1f, 0.35f);
@@ -62,6 +65,42 @@ public class PictogramGraphic : MaskableGraphic
                 if (Ok(f, 0)) Circle(vh, P(r, f, 0), s * 0.085f + (pass == 0 ? limb * 0.3f : 0f), c);
             }
         }
+
+        // setas do movimento de mãos e pés (por cima do bonequinho, como nos jogos de dança)
+        if (Paths == null) return;
+        for (int pass = 0; pass < 2; pass++)
+            foreach (var dancer in Paths)
+            {
+                if (dancer == null) continue;
+                foreach (var path in dancer)
+                    Arrow(vh, r, path, pass == 0 ? limb * 0.42f : limb * 0.24f, pass == 0 ? ArrowEdge : ArrowColor, pass == 0);
+            }
+    }
+
+    /// <summary>Trilha que fica mais forte perto do fim, com ponta de seta no destino.</summary>
+    static void Arrow(VertexHelper vh, Rect r, float[] path, float radius, Color c, bool edge)
+    {
+        int n = path.Length / 2;
+        if (n < 2) return;
+        Vector2 Pt(int k) { return new Vector2(r.xMin + path[2 * k] * r.width, r.yMax - path[2 * k + 1] * r.height); }
+        for (int k = 1; k < n; k++)
+        {
+            Color ck = c;
+            if (!edge) ck.a = Mathf.Lerp(0.35f, 1f, k / (float)(n - 1));
+            Capsule(vh, Pt(k - 1), Pt(k), radius, ck);
+        }
+        Vector2 tip = Pt(n - 1), from = Pt(Mathf.Max(0, n - 3));
+        Vector2 dir = tip - from;
+        if (dir.sqrMagnitude < 1e-4f) return;
+        dir.Normalize();
+        Vector2 side = new Vector2(-dir.y, dir.x);
+        float head = radius * 3.2f;
+        Vector2 a = tip + dir * head * 0.9f, b = tip - dir * head * 0.5f + side * head, d = tip - dir * head * 0.5f - side * head;
+        int i = vh.currentVertCount;
+        vh.AddVert(a, c, Vector4.zero);
+        vh.AddVert(b, c, Vector4.zero);
+        vh.AddVert(d, c, Vector4.zero);
+        vh.AddTriangle(i, i + 1, i + 2);
     }
 
     static bool Ok(float[] f, int k) { return !float.IsNaN(f[2 * k]); }
